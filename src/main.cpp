@@ -1,6 +1,8 @@
-#include <ESP8266WiFi.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
+#include <ESP8266WiFi.h>    // Board
+#include <NTPClient.h>      // Time Server
+#include <WiFiUdp.h>        // Time Server
+#include <Wiegand.h>        // KeyPad
+
 
 #include "defines.h"
 #include "config.h"

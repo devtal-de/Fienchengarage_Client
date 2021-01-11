@@ -13,3 +13,6 @@
 #define WIEGAND_PIN_1 5  //D?
 #define WIEGAND_PIN_LED 16 //D?
 
+
+// how long keeo doors open?
+#define DOORS_TIMEOUT 1000

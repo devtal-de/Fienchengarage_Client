@@ -12,6 +12,8 @@ NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 Wiegand wiegand;
 String Code;
 
+bool openDoor[4] = {false,false,false,false};
+
 
 // Notifies when a reader has been connected or disconnected.
 // Instead of a message, the seconds parameter can be anything you want -- Whatever you specify on `wiegand.onStateChange()`
@@ -66,23 +68,14 @@ void receivedData(uint8_t *data, uint8_t bits, const char *message)
     if (Code == "b913cbc21234b")
     {
       Serial.println("OK let's go");
-      digitalWrite(WIEGAND_PIN_LED, LOW);
-      delay(50);
-      digitalWrite(WIEGAND_PIN_LED, HIGH);
-      digitalWrite(gpioTuer1, LOW);
-      delay(10000);
-      digitalWrite(gpioTuer1, HIGH);
-      Code.remove(0);
+      openDoor[0]=true;
     }
-    else if (Code == "192432111")
+    else if (Code == "ea2814cb")
     {
-      digitalWrite(WIEGAND_PIN_LED, LOW);
-      delay(50);
-      digitalWrite(WIEGAND_PIN_LED, HIGH);
-      digitalWrite(gpioTuer2, LOW);
-      delay(10000);
-      digitalWrite(gpioTuer2, HIGH);
-      Code.remove(0);
+      openDoor[0]=true;
+      openDoor[1]=true;
+      openDoor[2]=true;
+      openDoor[3]=true;
     }
     else
     {
@@ -192,4 +185,30 @@ void loop()
   interrupts();
   //Sleep a little -- this doesn't have to run very often.
   delay(100);
+
+  if(openDoor[0] == true ) {
+    openDoor[0]=false;
+    digitalWrite(gpioTuer1, HIGH);
+    delay(DOORS_TIMEOUT);
+    digitalWrite(gpioTuer1, LOW);
+  }
+  if(openDoor[1] == true ) {
+    openDoor[1]=false;
+    digitalWrite(gpioTuer2, HIGH);
+    delay(DOORS_TIMEOUT);
+    digitalWrite(gpioTuer2, LOW);
+  }
+  if(openDoor[2] == true ) {
+    openDoor[2]=false;
+    digitalWrite(gpioTuer3, HIGH);
+    delay(DOORS_TIMEOUT);
+    digitalWrite(gpioTuer3, LOW);
+  }
+  if(openDoor[3] == true ) {
+    openDoor[3]=false;
+    digitalWrite(gpioTuer4, HIGH);
+    delay(DOORS_TIMEOUT);
+    digitalWrite(gpioTuer4, LOW);
+  }
+
 }

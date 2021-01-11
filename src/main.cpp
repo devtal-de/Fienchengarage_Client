@@ -12,7 +12,7 @@ NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 Wiegand wiegand;
 String Code;
 
-bool openDoor[4] = {false,false,false,false};
+unsigned long openDoor[4] = {0,0,0,0};
 
 
 // Notifies when a reader has been connected or disconnected.
@@ -68,14 +68,14 @@ void receivedData(uint8_t *data, uint8_t bits, const char *message)
     if (Code == "b913cbc21234b")
     {
       Serial.println("OK let's go");
-      openDoor[0]=true;
+      openDoor[0]=timeClient.getEpochTime()+10;
     }
     else if (Code == "ea2814cb")
     {
-      openDoor[0]=true;
-      openDoor[1]=true;
-      openDoor[2]=true;
-      openDoor[3]=true;
+      openDoor[0]=timeClient.getEpochTime()+DOORS_TIMEOUT;
+      openDoor[1]=timeClient.getEpochTime()+DOORS_TIMEOUT*2;
+      openDoor[2]=timeClient.getEpochTime()+DOORS_TIMEOUT*3;
+      openDoor[3]=timeClient.getEpochTime()+DOORS_TIMEOUT*4;
     }
     else
     {
@@ -171,6 +171,7 @@ void setup()
   //All OK, LED off
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+
 }
 
 void loop()
@@ -186,28 +187,24 @@ void loop()
   //Sleep a little -- this doesn't have to run very often.
   delay(100);
 
-  if(openDoor[0] == true ) {
-    openDoor[0]=false;
+  if(openDoor[0] > timeClient.getEpochTime() ) {
     digitalWrite(gpioTuer1, HIGH);
-    delay(DOORS_TIMEOUT);
+  } else {
     digitalWrite(gpioTuer1, LOW);
   }
-  if(openDoor[1] == true ) {
-    openDoor[1]=false;
+  if(openDoor[1] > timeClient.getEpochTime() ) {
     digitalWrite(gpioTuer2, HIGH);
-    delay(DOORS_TIMEOUT);
+  } else {
     digitalWrite(gpioTuer2, LOW);
   }
-  if(openDoor[2] == true ) {
-    openDoor[2]=false;
+  if(openDoor[2] > timeClient.getEpochTime() ) {
     digitalWrite(gpioTuer3, HIGH);
-    delay(DOORS_TIMEOUT);
+  } else {
     digitalWrite(gpioTuer3, LOW);
   }
-  if(openDoor[3] == true ) {
-    openDoor[3]=false;
+  if(openDoor[3] > timeClient.getEpochTime() ) {
     digitalWrite(gpioTuer4, HIGH);
-    delay(DOORS_TIMEOUT);
+  } else {
     digitalWrite(gpioTuer4, LOW);
   }
 

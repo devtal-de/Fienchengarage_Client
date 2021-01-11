@@ -15,4 +15,5 @@
 
 
 // how long keeo doors open?
-#define DOORS_TIMEOUT 1000
+// in seconds
+#define DOORS_TIMEOUT 1

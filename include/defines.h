@@ -7,3 +7,9 @@
 
 
 #define gpioLED 2
+
+//KeyPad
+#define WIEGAND_PIN_0 4  //D?
+#define WIEGAND_PIN_1 5  //D?
+#define WIEGAND_PIN_LED 16 //D?
+

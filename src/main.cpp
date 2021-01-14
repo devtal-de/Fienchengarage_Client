@@ -1,10 +1,14 @@
-#include <ESP8266WiFi.h> // Board
-#include <NTPClient.h>   // Time Server
-#include <WiFiUdp.h>     // Time Server
-#include <Wiegand.h>     // KeyPad
+#include <ESP8266WiFi.h>        // Board + WIFI + SSL
+#include <ESP8266HTTPClient.h>  // HTTPClient
+#include <NTPClient.h>          // Time Server
+#include <WiFiUdp.h>            // Time Server
+#include <Wiegand.h>            // KeyPad
+
+
 
 #include "defines.h"
 #include "config.h"
+#include "sha256.h"
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
@@ -13,6 +17,41 @@ Wiegand wiegand;
 String Code;
 
 unsigned long openDoor[4] = {0,0,0,0};
+
+bool getConfig() {
+
+  WiFiClientSecure httpsClient;
+  httpsClient.setInsecure();
+  BearSSL::X509List cert;
+  cert.append(lets_encrypt_r3); // Active
+  cert.append(lets_encrypt_e1); // Upcoming
+  httpsClient.setTrustAnchors(&cert);
+  
+  if (!httpsClient.connect(CONFIG_HOSTNAME, CONFIG_PORT)) {
+    Serial.println("connection failed ");
+    return false;
+  }
+  Serial.println("connected");
+
+  HTTPClient http;
+
+  // use hostname as user-agent
+  http.setUserAgent(HOSTNAME);
+
+  http.begin(httpsClient, CONFIG_HOSTNAME, CONFIG_PORT, CONFIG_FILE, true);
+  int httpCode = http.GET();
+  Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+  if(httpCode != 200)
+    return false;
+  
+  String content = http.getString();
+  Serial.printf("[HTTP] GET... : %s\n",  content.c_str());
+  
+  Serial.printf("[HTTP] SHA256... : %s\n",  sha256(content).c_str());
+  
+
+  return true;
+}
 
 
 // Notifies when a reader has been connected or disconnected.
@@ -130,12 +169,15 @@ void setup()
 
   // Beginn WiFi
 #if defined WLAN_SSID && defined WLAN_PSK
+  wifi_station_set_hostname(HOSTNAME);
+  
   Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(WLAN_SSID);
 
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
   WiFi.begin(WLAN_SSID, WLAN_PSK);
 
   while (WiFi.status() != WL_CONNECTED)
@@ -144,10 +186,7 @@ void setup()
     Serial.print(".");
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  WiFi.printDiag(Serial);
 #endif
   // Ende WiFi
 
@@ -168,6 +207,8 @@ void setup()
   //Sends the initial pin state to the Wiegand library
   pinStateChanged();
 
+  getConfig();
+
   //All OK, LED off
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
@@ -178,7 +219,7 @@ void loop()
 {
 
   // // NTP Client
-  timeClient.update();
+  //timeClient.update();
 
   // Wiegand
   noInterrupts();

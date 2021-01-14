@@ -3,7 +3,7 @@
 #include <NTPClient.h>          // Time Server
 #include <WiFiUdp.h>            // Time Server
 #include <Wiegand.h>            // KeyPad
-
+#include <SimpleMap.h>          // Holds Acess Tokens
 
 
 #include "defines.h"
@@ -17,6 +17,8 @@ Wiegand wiegand;
 String Code;
 
 unsigned long openDoor[4] = {0,0,0,0};
+//TODO find a better type than String
+SimpleMap<String, bool>* tokens;
 
 bool getConfig() {
 
@@ -47,8 +49,13 @@ bool getConfig() {
   String content = http.getString();
   Serial.printf("[HTTP] GET... : %s\n",  content.c_str());
   
-  Serial.printf("[HTTP] SHA256... : %s\n",  sha256(content).c_str());
-  
+  unsigned int pos = 0;
+  while(pos+64 < content.length())
+  {
+    Serial.printf("Found Hash: %s\n", content.substring(pos,pos+64).c_str() );
+    tokens->put(content.substring(pos,pos+64).c_str(),true);
+    pos+=64;
+  }
 
   return true;
 }
@@ -92,6 +99,23 @@ void receivedData(uint8_t *data, uint8_t bits, const char *message)
   {
     Code = input;
   }
+  // enter / hash key
+  else if (bits == 4 && input == "b")
+  {
+    unsigned long timestamp = (unsigned long) (timeClient.getEpochTime()/60/60/24) *60*60*24;
+    Serial.printf("Timestamp: %lu\n",timestamp);
+    for(int tuer=0; tuer<4; tuer++){
+        String hash = sha256(Code + String(timestamp) + String(tuer+1));
+        Serial.printf("Hash Input Code: %s, timestamp: %lu, tuer: %i\n", Code.c_str(), timestamp, tuer+1);
+        Serial.printf("Hash Tür %i: %s\n",tuer+1,hash.c_str());
+
+        // did we found the hash in the map?
+        if(tokens->has(hash)) {
+          //door open
+          openDoor[tuer]=timeClient.getEpochTime()+DOORS_TIMEOUT;
+        }
+    }
+  }
   // append Key
   else
   {
@@ -100,28 +124,6 @@ void receivedData(uint8_t *data, uint8_t bits, const char *message)
 
   Serial.printf("input: %s\n", input.c_str());
   Serial.printf("Code: %s\n" , Code.c_str());
-  
-  // # pressed
-  if (input == "b")
-  {
-    if (Code == "b913cbc21234b")
-    {
-      Serial.println("OK let's go");
-      openDoor[0]=timeClient.getEpochTime()+10;
-    }
-    else if (Code == "ea2814cb")
-    {
-      openDoor[0]=timeClient.getEpochTime()+DOORS_TIMEOUT;
-      openDoor[1]=timeClient.getEpochTime()+DOORS_TIMEOUT*2;
-      openDoor[2]=timeClient.getEpochTime()+DOORS_TIMEOUT*3;
-      openDoor[3]=timeClient.getEpochTime()+DOORS_TIMEOUT*4;
-    }
-    else
-    {
-      Serial.println("Nope");
-      Code.remove(0);
-    }
-  }
 }
 
 // Notifies when an invalid transmission is detected
@@ -192,6 +194,7 @@ void setup()
 
   // NTP Client
   timeClient.begin();
+  timeClient.forceUpdate();
 
   // Init KeyPad
   pinMode(WIEGAND_PIN_0, INPUT);
@@ -206,6 +209,12 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(WIEGAND_PIN_1), pinStateChanged, CHANGE);
   //Sends the initial pin state to the Wiegand library
   pinStateChanged();
+
+  tokens = new SimpleMap<String, bool>([](String &a, String &b) -> int {
+    if (a == b) return 0;      // a and b are equal
+    else if (a > b) return 1;  // a is bigger than b
+    else return -1;            // a is smaller than b
+  });;
 
   getConfig();
 

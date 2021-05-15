@@ -188,7 +188,7 @@ void setup()
     Serial.print(".");
   }
 
-  WiFi.printDiag(Serial);
+  //WiFi.printDiag(Serial);
 #endif
   // Ende WiFi
 

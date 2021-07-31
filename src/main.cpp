@@ -105,7 +105,7 @@ void receivedData(uint8_t *data, uint8_t bits, const char *message)
     unsigned long timestamp = (unsigned long) (timeClient.getEpochTime()/60/60/24) *60*60*24;
     Serial.printf("Timestamp: %lu\n",timestamp);
     for(int tuer=0; tuer<4; tuer++){
-        String hash = sha256(Code + String(timestamp) + String(tuer+1));
+        String hash = sha256(SHARED_SECRET + Code + String(timestamp) + String(tuer+1));
         Serial.printf("Hash Input Code: %s, timestamp: %lu, tuer: %i\n", Code.c_str(), timestamp, tuer+1);
         Serial.printf("Hash Tür %i: %s\n",tuer+1,hash.c_str());
 

@@ -12,6 +12,8 @@
 #define CONFIG_PORT 443
 #define CONFIG_FILE "/access.txt"
 
+#define SHARED_SECRET "changeme"
+
 
 // how long keep doors open?
 // in seconds

@@ -10,8 +10,8 @@ def main(argv):
     tuer = ""
     date = ""
     try:
-        opts, args = getopt.getopt(argv,":iptd:")
-        if len(args) != 7:
+        opts, args = getopt.getopt(argv,"s:i:p:t:d:")
+        if len(opts) != 5:
             print("gen_access_code.py -s <shared_secret> -i <cardid> -p <pin> -t <tuer> -d <dayoffset>")
             sys.exit(2)
     except getopt.GetoptError:
@@ -21,16 +21,16 @@ def main(argv):
         if opt == '-h':
             print("gen_access_code.py -s <shared_secret> -i <cardid> -p <pin> -t <tuer> -d <dayoffset>")
             sys.exit()
-        elif opt in ("-s"):
+        elif opt == "-s":
             shared_secret = str(arg)
-        elif opt in ("-i"):
+        elif opt == "-i":
             id = arg
-        elif opt in ("-p"):
+        elif opt == "-p":
             pin = arg
-        elif opt in ("-t"):
+        elif opt  == "-t":
             tuer = str(arg)
-        elif opt in ("-d"):
-            date = str( math.floor((datetime.datetime.today() + datetime.timedelta(days=int(arg))).timestamp() / 60 / 60 / 24)* 60 * 60 * 24 )
+        elif opt == "-d":
+            date = (datetime.datetime.today() + datetime.timedelta(days=int(arg))).strftime("%Y%m%d")
             #print(str(date))
  
     print( sha256((shared_secret+id+pin+date+tuer).encode("utf-8")).hexdigest() )

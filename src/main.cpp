@@ -4,6 +4,7 @@
 #include <WiFiUdp.h>            // Time Server
 #include <Wiegand.h>            // KeyPad
 #include <SimpleMap.h>          // Holds Acess Tokens
+#include <TimeLib.h>            // get year from timestamp
 
 
 #include "defines.h"
@@ -19,6 +20,13 @@ String Code;
 unsigned long openDoor[4] = {0,0,0,0};
 //TODO find a better type than String
 SimpleMap<String, bool>* tokens;
+
+// add a leading zero to 2 digit numbers
+String leadingZero(int val) {
+  char buff[2];
+  sprintf(buff, "%02i", val);
+  return String(buff);
+}
 
 bool getConfig() {
 
@@ -102,11 +110,11 @@ void receivedData(uint8_t *data, uint8_t bits, const char *message)
   // enter / hash key
   else if (bits == 4 && input == "b")
   {
-    unsigned long timestamp = (unsigned long) (timeClient.getEpochTime()/60/60/24) *60*60*24;
-    Serial.printf("Timestamp: %lu\n",timestamp);
+    String timestamp = String(year()) + leadingZero(month()) + leadingZero(day());
+    Serial.printf("Timestamp: %s\n",timestamp.c_str());
     for(int tuer=0; tuer<4; tuer++){
-        String hash = sha256(SHARED_SECRET + Code + String(timestamp) + String(tuer+1));
-        Serial.printf("Hash Input Code: %s, timestamp: %lu, tuer: %i\n", Code.c_str(), timestamp, tuer+1);
+        String hash = sha256(SHARED_SECRET + Code + timestamp + String(tuer+1));
+        Serial.printf("Hash Input Code: %s, timestamp: %s, tuer: %i\n", Code.c_str(), timestamp.c_str(), tuer+1);
         Serial.printf("Hash Tür %i: %s\n",tuer+1,hash.c_str());
 
         // did we found the hash in the map?
@@ -195,6 +203,7 @@ void setup()
   // NTP Client
   timeClient.begin();
   timeClient.forceUpdate();
+  setTime(timeClient.getEpochTime());
 
   // Init KeyPad
   pinMode(WIEGAND_PIN_0, INPUT);
